@@ -19,10 +19,7 @@ func Min[I constraints.Ordered](items []I) (*I, error) {
 
 	smallest := items[0]
 
-	for idx, item := range items {
-		if idx == 0 {
-			continue
-		}
+	for _, item := range items {
 		if item < smallest {
 			smallest = item
 		}
@@ -41,10 +38,7 @@ func Max[I constraints.Ordered](items []I) (*I, error) {
 
 	largest := items[0]
 
-	for idx, item := range items {
-		if idx == 0 {
-			continue
-		}
+	for _, item := range items {
 		if item > largest {
 			largest = item
 		}

@@ -3,7 +3,6 @@ package advent
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -50,11 +49,7 @@ func GetInputs(day int, year int) ([]structs.Group, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Hmm `defer resp.Body.Close()` complains about an unhandled error.
-	// So we drop the error in a closure?
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		text, err := ioutil.ReadAll(resp.Body)
@@ -98,11 +93,7 @@ func PostAnswer(day int, year int, part int, answer string) (bool, error) {
 		return false, err
 	}
 
-	// Hmm `defer resp.Body.Close()` complains about an unhandled error.
-	// So we drop the error in a closure?
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		text, err := ioutil.ReadAll(resp.Body)
