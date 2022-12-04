@@ -14,6 +14,7 @@ def fetch_inputs(day: str):
     full_url = AOC_URL % (day,)
     response = requests.get(full_url, cookies={"session": AOC_SESSION_ID})
     response.raise_for_status()
+    print(response.text)
     return response.text
 
 def main():
