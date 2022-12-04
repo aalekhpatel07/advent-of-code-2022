@@ -16,7 +16,9 @@ func buildClient(urlObj *url.URL) (http.Client, error) {
 
 	sessionId := os.Getenv("AOC_SESSION_ID")
 	if sessionId == "" {
-		return http.Client{}, errors.New("No AOC_SESSION_ID provided. (It can be found by logging in through a browser and getting the session cookie.")
+		return http.Client{}, errors.New("no AOC_SESSION_ID provided. " +
+			"(It can be found by logging in through a browser and getting the session cookie.)",
+		)
 	}
 	jar, err := cookiejar.New(nil)
 	if err != nil {

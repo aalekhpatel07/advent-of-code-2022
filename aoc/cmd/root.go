@@ -10,17 +10,18 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "my-aoc",
 	Short: "Compute and submit Advent Of Code solutions",
-	Long:  "my-aoc lets you submit the solution to any day of Advent Of Code by running your text input against the solutions provided in this project.",
-	Run:   Run,
+	Long: "my-aoc lets you submit the solution to any day of Advent Of Code by running your text input against the solutions provided in this project. Please" +
+		" provide the AOC_SESSION_ID environment variable with your session ID when interacting with this binary.",
+	Run: Run,
 }
 
 var Submit bool = false
 
 func init() {
 	rootCmd.PersistentFlags().IntP("day", "d", 1, "The day to run solutions for.")
-	rootCmd.PersistentFlags().IntP("year", "y", 2022, "The year to run solutions for.")
+	rootCmd.PersistentFlags().IntP("year", "y", 2022, "The year to run solutions for. Currently, only 2022 is supported.")
 	rootCmd.PersistentFlags().IntP("part", "p", 1, "The part to run solution for.")
-	rootCmd.PersistentFlags().BoolVarP(&Submit, "submit", "s", false, "should submit")
+	rootCmd.PersistentFlags().BoolVarP(&Submit, "submit", "s", false, "If set, will submit your solution to AOC.")
 
 	_ = rootCmd.MarkFlagRequired("verbose")
 	_ = rootCmd.MarkFlagRequired("day")
