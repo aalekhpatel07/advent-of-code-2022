@@ -1,12 +1,13 @@
 package year_2022
 
 import (
-	"aoc/internal"
-	"aoc/pkg/structs"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
+
+	"aoc/internal"
+	"aoc/pkg/structs"
 )
 
 type Day01 struct{}

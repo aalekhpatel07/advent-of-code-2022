@@ -1,10 +1,11 @@
 package year_2022
 
 import (
-	"aoc/pkg/advent"
-	"aoc/pkg/structs"
 	"fmt"
 	"log"
+
+	"aoc/pkg/advent"
+	"aoc/pkg/structs"
 )
 
 type Solution interface {
