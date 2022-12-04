@@ -1,4 +1,10 @@
 github.com/joho/godotenv v1.4.0 h1:3l4+N6zfMWnkbPEXKng2o2/MR5mSwTrBih4ZEkkz1lg=
 github.com/joho/godotenv v1.4.0/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
+github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
 github.com/yanatan16/itertools v0.0.0-20160513161737-afd1891e0c4f h1:Nt6x3SZefKmgBH5C/nnDP15wzvqKx9y0LTmdakXyack=
 github.com/yanatan16/itertools v0.0.0-20160513161737-afd1891e0c4f/go.mod h1:wI7IL5IhXLGBXvxuVv9WkhkUQj/KHN0pq5EIlRbA89E=
+github.com/zyedidia/generic v1.2.0 h1:FqmwImOpNLlru0UVbamNk5omCHWmXcs+om4+Dh6KLC8=
+github.com/zyedidia/generic v1.2.0/go.mod h1:ly2RBz4mnz1yeuVbQA/VFwGjK3mnHGRj1JuoG336Bis=
+golang.org/x/exp v0.0.0-20220218215828-6cf2b201936e h1:iWVPgObh6F4UDtjBLK51zsy5UHTPLQwCmsNjCsbKhQ0=
+golang.org/x/exp v0.0.0-20220218215828-6cf2b201936e/go.mod h1:lgLbSvA5ygNOMpwM/9anMpWVlVJ7Z+cHWq/eFuinpGE=
