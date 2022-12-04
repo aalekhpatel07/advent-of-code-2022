@@ -44,58 +44,19 @@ func Run(cmd *cobra.Command, args []string) {
 		log.Fatalf("Could not fetch inputs: %s", err.Error())
 	}
 
-	switch day {
-	case 1:
-		{
-			year_2022.Solve(day, year, part, inputs, &year_2022.Day01{}, Submit)
-			break
-		}
-	case 2:
-		{
-			year_2022.Solve(day, year, part, inputs, &year_2022.Day02{}, Submit)
-			break
-		}
-	case 3:
-		{
-			year_2022.Solve(day, year, part, inputs, &year_2022.Day03{}, Submit)
-			break
-		}
-	case 4:
-		{
-			year_2022.Solve(day, year, part, inputs, &year_2022.Day04{}, Submit)
-			break
-		}
-	case 5:
-		{
-			year_2022.Solve(day, year, part, inputs, &year_2022.Day05{}, Submit)
-			break
-		}
-		//case 6:
-		//	{
-		//		year_2022.Solve(day, year, part, inputs, &year_2022.Day06{}, Submit)
-		//		break
-		//	}
-		//case 7:
-		//	{
-		//		year_2022.Solve(day, year, part, inputs, &year_2022.Day07{}, Submit)
-		//		break
-		//	}
-		//case 8:
-		//	{
-		//		year_2022.Solve(day, year, part, inputs, &year_2022.Day08{}, Submit)
-		//		break
-		//	}
-		//case 9:
-		//	{
-		//		year_2022.Solve(day, year, part, inputs, &year_2022.Day09{}, Submit)
-		//		break
-		//	}
-		//case 10:
-		//	{
-		//		year_2022.Solve(day, year, part, inputs, &year_2022.Day10{}, Submit)
-		//		break
-		//	}
-	}
+	solutions := make(map[int]year_2022.Solution)
+
+	solutions[1] = &year_2022.Day01{}
+	solutions[2] = &year_2022.Day02{}
+	solutions[3] = &year_2022.Day03{}
+	solutions[4] = &year_2022.Day04{}
+	solutions[5] = &year_2022.Day05{}
+	//solutions[6] = &year_2022.Day06{}
+	//solutions[7] = &year_2022.Day07{}
+	//solutions[8] = &year_2022.Day08{}
+	//solutions[9] = &year_2022.Day09{}
+
+	year_2022.Solve(day, year, part, inputs, solutions[day], Submit)
 }
 
 func Execute() {
