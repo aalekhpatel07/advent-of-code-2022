@@ -1,7 +1,6 @@
 package advent
 
 import (
-	"aoc/pkg/structs"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"aoc/pkg/structs"
 )
 
 func buildClient(urlObj *url.URL) (*http.Client, error) {

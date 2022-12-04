@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"log"
+
+	"github.com/spf13/cobra"
+
 	"aoc/pkg/advent"
 	"aoc/pkg/year_2022"
-	"github.com/spf13/cobra"
-	"log"
 )
 
 var rootCmd = &cobra.Command{

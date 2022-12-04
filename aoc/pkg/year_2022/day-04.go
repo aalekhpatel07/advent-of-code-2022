@@ -1,10 +1,11 @@
 package year_2022
 
 import (
-	"aoc/pkg/structs"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"aoc/pkg/structs"
 )
 
 type Day04 struct {
