@@ -1,19 +1,41 @@
 package main
 
 import (
-	"aoc/pkg/input"
+	"aoc/pkg/advent"
 	"aoc/pkg/structs"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	inputs := input.GetInputs(4, 2022)
+	inputs, err := advent.GetInputs(4, 2022)
+	if err != nil {
+		log.Fatal(err)
+	}
 	part1Answer := Part1(inputs)
-	fmt.Println(fmt.Sprintf("Part 1: %d", part1Answer))
+	fmt.Println(fmt.Sprintf("Part 1: %s", part1Answer))
 	part2Answer := Part2(inputs)
-	fmt.Println(fmt.Sprintf("Part 2: %d", part2Answer))
+	fmt.Println(fmt.Sprintf("Part 2: %s", part2Answer))
+
+	// We get rate-limited if we answer incorrectly.
+	// Therefore, only uncomment these lines when we wish to
+	// submit.
+	//sendSolution(4, 2022, 1, inputs, Part1)
+	//sendSolution(4, 2022, 2, inputs, Part2)
+
+}
+
+func sendSolution(day int, year int, part int, inputs []structs.Group, solution func([]structs.Group) string) {
+	answer := solution(inputs)
+	_, err := advent.PostAnswer(day, year, part, answer)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Error! (Day: %d, Year: %d, Part %d)", day, year, part))
+		fmt.Println(err)
+	} else {
+		fmt.Println(fmt.Sprintf("Success! (Day: %d, Year: %d, Part %d)", day, year, part))
+	}
 }
 
 type Section struct {
@@ -64,7 +86,7 @@ func (w *WorkPair) overlaps() bool {
 	return false
 }
 
-func Part1(inputs []structs.Group) int32 {
+func Part1(inputs []structs.Group) string {
 
 	contents := inputs[0].Contents
 	rounds := strings.Split(contents, "\n")
@@ -86,10 +108,10 @@ func Part1(inputs []structs.Group) int32 {
 			count += 1
 		}
 	}
-	return count
+	return fmt.Sprintf("%d", count)
 }
 
-func Part2(inputs []structs.Group) int32 {
+func Part2(inputs []structs.Group) string {
 
 	contents := inputs[0].Contents
 	rounds := strings.Split(contents, "\n")
@@ -111,5 +133,5 @@ func Part2(inputs []structs.Group) int32 {
 			count += 1
 		}
 	}
-	return count
+	return fmt.Sprintf("%d", count)
 }

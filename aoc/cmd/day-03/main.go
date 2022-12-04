@@ -1,14 +1,18 @@
 package main
 
 import (
-	"aoc/pkg/input"
+	"aoc/pkg/advent"
 	"aoc/pkg/structs"
 	"fmt"
+	"log"
 	"strings"
 )
 
 func main() {
-	inputs := input.GetInputs(3, 2022)
+	inputs, err := advent.GetInputs(3, 2022)
+	if err != nil {
+		log.Fatal(err)
+	}
 	part1Answer := Part1(inputs)
 	fmt.Println(fmt.Sprintf("Part 1: %d", part1Answer))
 	part2Answer := Part2(inputs)
