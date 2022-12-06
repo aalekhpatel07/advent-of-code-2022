@@ -53,7 +53,7 @@ func Run(cmd *cobra.Command, args []string) {
 	solutions[3] = &year_2022.Day03{}
 	solutions[4] = &year_2022.Day04{}
 	solutions[5] = &year_2022.Day05{}
-	//solutions[6] = &year_2022.Day06{}
+	solutions[6] = &year_2022.Day06{}
 	//solutions[7] = &year_2022.Day07{}
 	//solutions[8] = &year_2022.Day08{}
 	//solutions[9] = &year_2022.Day09{}
