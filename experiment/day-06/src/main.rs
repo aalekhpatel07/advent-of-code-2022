@@ -73,6 +73,7 @@ fn main() {
 }
 
 
+#[cfg(test)]
 mod tests {
 
     #![allow(dead_code)]
