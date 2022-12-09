@@ -48,8 +48,8 @@ impl Position {
                 Some(Direction::Left)
             }
         } else {
-            // Neither on same column nor on same height,
-            // so make a diagonal jump.
+            // Neither on same column nor on the same row,
+            // so we must make a diagonal jump.
             match (other.col > self.col, other.row > self.row) {
                 (true, true) => Some(Direction::UpRight),
                 (true, false) => Some(Direction::DownRight),
