@@ -1,15 +1,12 @@
-use std::ops::{Add, AddAssign};
+use std::ops::AddAssign;
 use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
-use std::{collections::HashSet, str::FromStr, char::ParseCharError};
+use std::{collections::HashSet, str::FromStr};
 use std::result::Result;
 use crossbeam::channel::{
     Sender,
     Receiver,
     unbounded
 };
-use anyhow::Error;
-use anyhow::anyhow;
 
 
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
@@ -26,41 +23,42 @@ impl From<(isize, isize)> for Position {
 
 
 impl Position {
-    pub fn close_enough(&self, other: &Position) -> bool {
-        self.distance(other) <= 1
-    }
+
+    // Get the direction of jump that `self` must make 
+    // to stay close to other.
     pub fn two_steps_in_direction(&self, other: &Position) -> Option<Direction> {
         
         if self.distance(other) < 2 {
             return None
         }
 
+        // On the same column. Can go either up or down.
         if self.column_distance(other) == 0 {
             if other.row > self.row {
-                return Some(Direction::Up)
+                Some(Direction::Up)
+            } else {
+                Some(Direction::Down)
             }
-            return Some(Direction::Down)
-
-        } else if self.row_distance(other) == 0 {
+        } 
+        // On the same row. Can go either left or right.
+        else if self.row_distance(other) == 0 {
             if other.col > self.col {
-                return Some(Direction::Right)
+                Some(Direction::Right)
+            } else {
+                Some(Direction::Left)
             }
-            return Some(Direction::Left)
-        }        
-
-        if other.col > self.col {
-            if other.row > self.row {
-                return Some(Direction::UpRight)
+        } else {
+            // Neither on same column nor on same height,
+            // so make a diagonal jump.
+            match (other.col > self.col, other.row > self.row) {
+                (true, true) => Some(Direction::UpRight),
+                (true, false) => Some(Direction::DownRight),
+                (false, true) => Some(Direction::UpLeft),
+                (false, false) => Some(Direction::DownLeft)
             }
-            return Some(Direction::DownRight)
         }
 
-        if other.row > self.row {
-            return Some(Direction::UpLeft)
-        }
-        return Some(Direction::DownLeft)
 
-        // Self -> Other direction
     }
     pub fn row_distance(&self, other: &Position) -> isize {
         (self.row - other.row).abs()
@@ -121,14 +119,14 @@ impl Direction {
 
 
 impl FromStr for Direction {
-    type Err = anyhow::Error;
+    type Err = std::io::Error;
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
             "R" => Ok(Direction::Right),
             "L" => Ok(Direction::Left),
             "U" => Ok(Direction::Up),
             "D" => Ok(Direction::Down),
-            _ => Err(anyhow!("Unknown char?"))
+            _ => panic!("Unknown char.")
         }
     }
 }
@@ -140,12 +138,12 @@ pub struct Command {
 }
 
 impl FromStr for Command {
-    type Err = anyhow::Error;
+    type Err = std::io::Error;
     fn from_str(value: &str) -> Result<Self, Self::Err> {
 
         let direction: String = value.chars().take(1).collect::<String>();
         let count: String = value.chars().skip(2).collect::<String>();
-        let count = usize::from_str(&count)?;
+        let count = usize::from_str(&count).unwrap();
 
         Ok(Self {
             direction: Direction::from_str(&direction)?,
@@ -155,40 +153,47 @@ impl FromStr for Command {
 }
 
 #[derive(Debug, Clone)]
-pub struct Game {
-    pub tail_path: Vec<Position>,
-    pub head_path: Vec<Position>,
-    pub head_coverage: HashSet<Position>,
-    pub tail_coverage: HashSet<Position>,
+pub struct Game<const N: usize> {
     pub rx: Receiver<Command>,
-    pub head: Position,
-    pub tail: Position
+    pub knots: Vec<Position>,
+    pub coverage: Vec<HashSet<Position>>
 }
 
 
-impl Game {
+impl<const N: usize> Game<N> {
 
     pub fn new(rx: Receiver<Command>) -> Self {
         Self {
-            tail_path: vec![Position::default()],
-            head_path: vec![Position::default()],
-            head_coverage: HashSet::from_iter([Position::default()]),
-            tail_coverage: HashSet::from_iter([Position::default()]),
             rx,
-            head: Position::default(),
-            tail: Position::default()
+            knots: vec![Position::default(); N],
+            coverage: vec![HashSet::from_iter([Position::default()]); N]
         }
     }
 
     pub fn accept(&mut self, command: Command) {
         let Command { direction, steps } = command;
 
+        // Update the positions iteratively.
         for _ in 1..=steps {
-            self.head += direction.vector();
-            self.head_coverage.insert(self.head);
-            if let Some(direction_for_tail) = self.tail.two_steps_in_direction(&self.head) {
-                self.tail += direction_for_tail.vector();
-                self.tail_coverage.insert(self.tail);
+            // First the leader knot gets to update.
+            let mut leader_knot = self.knots[0];
+
+            leader_knot += direction.vector();
+            self.knots[0] = leader_knot;
+            self.coverage.get_mut(0).unwrap().insert(leader_knot);
+            
+            // Once the leader knot moves we update all following knots
+            // in order, depending on the most recent position of the knot
+            // preceding it.
+
+            for index in 1..self.knots.len() {
+                let mut follower_knot = self.knots[index];
+
+                if let Some(direction_for_follower) = follower_knot.two_steps_in_direction(&self.knots[index - 1]) {
+                    follower_knot += direction_for_follower.vector();
+                    self.coverage.get_mut(index).unwrap().insert(follower_knot);
+                    self.knots[index] = follower_knot;
+                }
             }
         }
     }
@@ -203,7 +208,19 @@ impl Game {
 
 pub fn solve_part1(input: &str) -> usize {
     let (tx, rx) = unbounded();
-    let game = Arc::new(Mutex::new(Game::new(rx)));
+    let game = Game::<2>::new(rx);
+    solve(input, game, 1, tx)
+}
+
+pub fn solve_part2(input: &str) -> usize {
+    let (tx, rx) = unbounded();
+    let game = Game::<10>::new(rx);
+    solve(input, game, 9, tx)
+}
+
+/// Solve for a general scenario of the knots game.
+pub fn solve<const N: usize>(input: &str, game: Game<N>, knot_to_track: usize, tx: Sender<Command>) -> usize {
+    let game = Arc::new(Mutex::new(game));
 
     let game_cp = game.clone();
     let handle = std::thread::spawn(move || {
@@ -223,16 +240,17 @@ pub fn solve_part1(input: &str) -> usize {
     drop(tx);
     handle.join().unwrap();
 
-    let size = game.lock().unwrap().tail_coverage.len();
-    size
+    let size_of_different_positions = game.lock().unwrap().coverage.get(knot_to_track).unwrap().len();
+    size_of_different_positions
 }
 
 
 
-fn main() {
+pub fn main() {
     let input = include_str!("input.txt");
 
     println!("Part 1: {}", solve_part1(input));
+    println!("Part 1: {}", solve_part2(input));
 }
 
 
@@ -251,5 +269,22 @@ D 1
 L 5
 R 2";
         assert_eq!(13, solve_part1(input));
+        assert_eq!(1, solve_part2(input));
     }
+
+    #[test]
+    fn test_big_case() {
+        let input: &str = "R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20";
+        // assert_eq!(13, solve_part1(input));
+        assert_eq!(36, solve_part2(input));
+    }
+
+
 }
