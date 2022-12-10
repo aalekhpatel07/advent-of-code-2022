@@ -1,6 +1,6 @@
 # Advent of Code 2022
 
-This Go project contains my solutions for Advent of Code 2022.
+This Go (+ Rust) hybrid project contains my solutions for Advent of Code 2022.
 
 **Disclaimer**: I'm trying out Go for the first time so this project may not be as idiomatic.
 
