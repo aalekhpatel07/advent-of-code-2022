@@ -3,9 +3,5 @@ name = "day-06"
 version = "0.1.0"
 edition = "2021"
 
-[profile.release]
-lto = "fat"
-debug = false
-
 [dev-dependencies]
 test-case = "2.2.2"

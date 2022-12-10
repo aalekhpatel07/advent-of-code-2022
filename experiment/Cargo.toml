@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "day-*"
+]
+
+[profile.release]
+lto = "fat"
+debug = false
