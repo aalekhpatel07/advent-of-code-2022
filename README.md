@@ -6,6 +6,18 @@ This Go (+ Rust) hybrid project contains my solutions for Advent of Code 2022.
 
 ## Usage
 
+### Rust parts
+
+Build the binaries in the workspace:
+```sh
+cd experiment && cargo build --release
+```
+Run the release binary for that day: `./target/release/day-*`
+
+(Do we want some clap-based argparser setup like the `aoc` cobra setup? probably yes but its boring to refactor. Maybe later?)
+
+### Go parts
+
 Build the project with Go: 
 ```sh
 cd aoc && go build
