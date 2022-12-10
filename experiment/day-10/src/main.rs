@@ -13,7 +13,6 @@ pub enum Instruction {
     Noop
 }
 
-
 impl TryFrom<&str> for Instruction {
     type Error = std::io::Error;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
@@ -95,19 +94,11 @@ pub fn update_part2_state(
 
 pub fn solve_part2(inputs: &str) -> String {
 
-    let instructions: Vec<Instruction> = inputs
-    .lines()
-    .take_while(|&line| !line.is_empty())
-    .map(|line| {
-        Instruction::try_from(line).unwrap()
-    })
-    .collect();
+    let instructions = get_instructions(inputs);
 
     let mut cycles: isize = 0;
     let mut register_value: isize = 1;
-
     let mut sprite_visible: [[bool; 40]; 6] = [[false; 40]; 6];
-    // sprite_visible[0][0] = true;
 
     for instruction in instructions.into_iter() {
         match instruction {
