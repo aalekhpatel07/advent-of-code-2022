@@ -9,7 +9,6 @@ fn main() {
     println!("Part 2: {res}");
 }
 
-
 pub fn solve(contents: &str, rounds: usize, is_part_two: bool) -> usize {
     let (_, monkees) = parse_many_monke(contents).unwrap();
 
@@ -24,7 +23,7 @@ pub fn solve(contents: &str, rounds: usize, is_part_two: bool) -> usize {
         monkees,
         inspection_count: hmap,
         is_part_two,
-        divisor_product
+        divisor_product,
     };
 
     for _ in 0..rounds {
@@ -43,7 +42,6 @@ pub fn solve_part1(contents: &str) -> usize {
 pub fn solve_part2(contents: &str) -> usize {
     solve(contents, 10_000, true)
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -79,11 +77,10 @@ Monkey 3:
     If true: throw to monkey 0
     If false: throw to monkey 1";
 
-    let res = solve_part1(contents);
-    assert_eq!(res, 101 * 105);
+        let res = solve_part1(contents);
+        assert_eq!(res, 101 * 105);
 
-    let res = solve_part2(contents);
-    assert_eq!(res, 52166 * 52013);
-
+        let res = solve_part2(contents);
+        assert_eq!(res, 52166 * 52013);
     }
 }
