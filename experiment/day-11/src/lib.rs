@@ -111,7 +111,7 @@ impl MonkeBusiness {
             self
             .inspection_count
             .entry(current_monke_index)
-            .and_modify(|value| *value = *value + current_monke.items.len())
+            .and_modify(|value| *value += current_monke.items.len())
             .or_insert(current_monke.items.len());
             
             self.monkees.get_mut(current_monke_index).unwrap().items.clear();
