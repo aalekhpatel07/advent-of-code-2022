@@ -144,14 +144,6 @@ impl Cave {
             .map(move |x| Point { x, y })
     }
 
-    pub fn height(&self) -> usize {
-        0
-    }
-
-    pub fn width(&self) -> usize {
-        0
-    }
-
     pub fn top_left(&self) -> Point {
         let mut left_most = self.rocks().map(|p| p.x).min().unwrap();
         if self.include_bottom_floor {
