@@ -10,7 +10,7 @@ pub fn solve_part1(s: &str) -> usize {
     .into_iter()
     .enumerate()
     .map(|(idx, pair)| {
-        let item = pair.split("\n").collect::<Vec<&str>>();
+        let item = pair.split('\n').collect::<Vec<&str>>();
         let first = Packet::parse(item[0]).unwrap().1;
         let second = Packet::parse(item[1]).unwrap().1;
 
@@ -32,7 +32,7 @@ pub fn solve_part2(s: &str) -> usize {
     .split("\n\n")
     .into_iter()
     .for_each(|pair| {
-        let item = pair.split("\n").collect::<Vec<&str>>();
+        let item = pair.split('\n').collect::<Vec<&str>>();
         let first = Packet::parse(item[0]).unwrap().1;
         let second = Packet::parse(item[1]).unwrap().1;
 

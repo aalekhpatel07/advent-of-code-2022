@@ -85,7 +85,7 @@ impl PartialOrd for Packet {
                         Both(left, right) => {
                             // Both left and right items are present and we haven't yet concluded anything.
                             // Compare them.
-                            conclusion = left.partial_cmp(&right);
+                            conclusion = left.partial_cmp(right);
                         },
                         Left(_) => {
                             // Right ran out of items.
