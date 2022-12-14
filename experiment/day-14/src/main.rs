@@ -19,7 +19,7 @@ pub fn solve_part1(s: &str) -> usize {
 
     'sand: loop {
         let mut trajectory = cave.get_trajectory();
-        while let Some((_point, _current_streak)) = trajectory.next() {
+        for (_point, _current_streak) in trajectory.by_ref() {
             if _current_streak > max_streak {
                 break 'sand;
             }
@@ -42,7 +42,7 @@ pub fn solve_part2(s: &str) -> usize {
         let mut steps_taken: usize = 0;
         progress_bar.inc(1);
         progress_bar.set_message(format!("Elapsed: {:.4} s / Speed: {:.4} (stabilizations/sec)", progress_bar.elapsed().as_secs_f64(), progress_bar.per_sec()));
-        while let Some((_point, _)) = trajectory.next() {
+        for (_point, _) in trajectory.by_ref() {
             steps_taken += 1;
         }
         cave.stabilize_sand(trajectory.position);
