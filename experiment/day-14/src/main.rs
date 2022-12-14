@@ -1,21 +1,18 @@
 pub use day_14::*;
 use indicatif::ProgressBar;
 
-
 fn main() {
     let s = include_str!("input.txt");
     println!("Part 1: {}", solve_part1(s));
     println!("Part 2: {}", solve_part2(s));
 }
 
-
 pub fn solve_part1(s: &str) -> usize {
     let mut cave = Cave::parse(s).unwrap().1;
 
     // How straight and deep are we willing to go before
     // we conclude this is an endless void?
-    let max_streak: usize = 1_000; 
-
+    let max_streak: usize = 1_000;
 
     'sand: loop {
         let mut trajectory = cave.get_trajectory();
@@ -41,7 +38,11 @@ pub fn solve_part2(s: &str) -> usize {
         let mut trajectory = cave.get_trajectory();
         let mut steps_taken: usize = 0;
         progress_bar.inc(1);
-        progress_bar.set_message(format!("Elapsed: {:.4} s / Speed: {:.4} (stabilizations/sec)", progress_bar.elapsed().as_secs_f64(), progress_bar.per_sec()));
+        progress_bar.set_message(format!(
+            "Elapsed: {:.4} s / Speed: {:.4} (stabilizations/sec)",
+            progress_bar.elapsed().as_secs_f64(),
+            progress_bar.per_sec()
+        ));
         for (_point, _) in trajectory.by_ref() {
             steps_taken += 1;
         }
@@ -53,7 +54,6 @@ pub fn solve_part2(s: &str) -> usize {
     progress_bar.finish_and_clear();
     cave.sand.len()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -74,6 +74,5 @@ mod tests {
 
         assert_eq!(solve_part1(s), 638);
         assert_eq!(solve_part2(s), 31_722);
-
     }
 }

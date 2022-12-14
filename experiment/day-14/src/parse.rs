@@ -1,54 +1,62 @@
 use nom::{
-    IResult, sequence::separated_pair, 
-    character::complete::digit1, 
-    bytes::complete::tag, 
+    bytes::complete::tag,
+    character::complete::char as nom_char,
+    character::complete::digit1,
     combinator::{map, map_res},
-    character::complete::char as nom_char, 
     multi::separated_list1,
+    sequence::separated_pair,
+    IResult,
 };
 
-use crate::{Point, RockSegment, Cave};
-
-
+use crate::{Cave, Point, RockSegment};
 
 pub trait Parse {
-    fn parse(s: &str) -> IResult<&str, Self> where Self: Sized;
+    fn parse(s: &str) -> IResult<&str, Self>
+    where
+        Self: Sized;
 }
 
-
 impl Parse for Point {
-    fn parse(s: &str) -> IResult<&str, Self> where Self: Sized {
+    fn parse(s: &str) -> IResult<&str, Self>
+    where
+        Self: Sized,
+    {
         map(
             separated_pair(
-                map_res(digit1, str::parse::<isize>), 
-                nom_char(','), 
-                map_res(digit1, str::parse::<isize>)
+                map_res(digit1, str::parse::<isize>),
+                nom_char(','),
+                map_res(digit1, str::parse::<isize>),
             ),
-            |(x ,y)| Point { x, y }
+            |(x, y)| Point { x, y },
         )(s)
     }
 }
 
 impl Parse for RockSegment {
-    fn parse(s: &str) -> IResult<&str, Self> where Self: Sized {
-        map(
-            separated_list1(
-                tag(" -> "),
-                Point::parse
-            ),
-            |points| RockSegment { points }
-        )(s)
+    fn parse(s: &str) -> IResult<&str, Self>
+    where
+        Self: Sized,
+    {
+        map(separated_list1(tag(" -> "), Point::parse), |points| {
+            RockSegment { points }
+        })(s)
     }
 }
 
 impl Parse for Cave {
-    fn parse(s: &str) -> IResult<&str, Self> where Self: Sized {
+    fn parse(s: &str) -> IResult<&str, Self>
+    where
+        Self: Sized,
+    {
         map(
-            separated_list1(
-                tag("\n"),
-                RockSegment::parse
-            ),
-            |rock_segments| Cave { rock_segments, sand: vec![], include_bottom_floor: false, floor_left_most: None, floor_right_most: None}
+            separated_list1(tag("\n"), RockSegment::parse),
+            |rock_segments| Cave {
+                rock_segments,
+                sand: vec![],
+                include_bottom_floor: false,
+                floor_left_most: None,
+                floor_right_most: None,
+            },
         )(s)
     }
 }
