@@ -2,36 +2,28 @@ use std::cmp::Ordering;
 
 use day_13::*;
 
-
 pub fn solve_part1(s: &str) -> usize {
+    s.split("\n\n")
+        .into_iter()
+        .enumerate()
+        .map(|(idx, pair)| {
+            let item = pair.split('\n').collect::<Vec<&str>>();
+            let first = Packet::parse(item[0]).unwrap().1;
+            let second = Packet::parse(item[1]).unwrap().1;
 
-    s
-    .split("\n\n")
-    .into_iter()
-    .enumerate()
-    .map(|(idx, pair)| {
-        let item = pair.split('\n').collect::<Vec<&str>>();
-        let first = Packet::parse(item[0]).unwrap().1;
-        let second = Packet::parse(item[1]).unwrap().1;
-
-        if first.partial_cmp(&second) == Some(Ordering::Less) {
-            idx + 1
-        } else {
-            0
-        }
-    })
-    .sum()
-
+            if first.partial_cmp(&second) == Some(Ordering::Less) {
+                idx + 1
+            } else {
+                0
+            }
+        })
+        .sum()
 }
 
 pub fn solve_part2(s: &str) -> usize {
-
     let mut pairs = vec![];
 
-    s
-    .split("\n\n")
-    .into_iter()
-    .for_each(|pair| {
+    s.split("\n\n").into_iter().for_each(|pair| {
         let item = pair.split('\n').collect::<Vec<&str>>();
         let first = Packet::parse(item[0]).unwrap().1;
         let second = Packet::parse(item[1]).unwrap().1;
@@ -48,29 +40,18 @@ pub fn solve_part2(s: &str) -> usize {
 
     pairs.sort();
 
-    let divider_packet1_index = 
-        pairs
+    let divider_packet1_index = pairs
         .iter()
         .enumerate()
-        .filter(
-            |(_, packet)| {
-                packet == &&divider_packet1
-            }
-        )
+        .filter(|(_, packet)| packet == &&divider_packet1)
         .map(|(idx, _)| idx)
         .next()
         .unwrap();
 
-
-    let divider_packet2_index = 
-        pairs
+    let divider_packet2_index = pairs
         .iter()
         .enumerate()
-        .filter(
-            |(_, packet)| {
-                packet == &&divider_packet2
-            }
-        )
+        .filter(|(_, packet)| packet == &&divider_packet2)
         .map(|(idx, _)| idx)
         .next()
         .unwrap();
@@ -78,13 +59,11 @@ pub fn solve_part2(s: &str) -> usize {
     (divider_packet1_index + 1) * (divider_packet2_index + 1)
 }
 
-
 fn main() {
     let input = include_str!("input.txt");
     println!("Part 1: {}", solve_part1(input));
     println!("Part 2: {}", solve_part2(input));
 }
-
 
 #[cfg(test)]
 mod tests {
