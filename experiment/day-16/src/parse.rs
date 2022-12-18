@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tunnels {
     pub from: String,
-    pub flow_rate: usize,
+    pub flow_rate: isize,
     pub to: Vec<String>
 }
 
@@ -16,15 +16,35 @@ where
     fn from(s: T) -> Self {
         let mut hmap = HashMap::new();
         let mut flow_map = HashMap::new();
+        let all_tunnels = s.into_iter().collect::<Vec<_>>();
+        let mut starting_nodes = all_tunnels.iter().map(|t| t.from.clone()).collect::<Vec<_>>();
+        starting_nodes.sort();
 
-        for tunnels in s {
-            hmap.insert(tunnels.from.clone(), tunnels.to);
-            flow_map.insert(tunnels.from, tunnels.flow_rate);
+        let mut indices = starting_nodes.iter().enumerate().map(|(idx, _)| idx as u8).collect::<Vec<_>>();
+        let mut non_zero_indices = Vec::new();
+
+        for (idx, tunnels) in all_tunnels.iter().enumerate() {
+            let from = tunnels.from.clone();
+            let from_index = starting_nodes.binary_search(&from).unwrap() as u8;
+
+            let neighbors = tunnels
+            .to
+            .iter()
+            .map(|t| starting_nodes.binary_search(&t).unwrap() as u8)
+            .collect::<Vec<_>>();
+
+            hmap.insert(from_index, neighbors);
+            // hmap.insert(idx as u8, tunnels.to.iter().map(|t| all_tunnels.binary_search_by_key(&t, |z| z.from.clone())).collect::<Vec<_>>());
+            flow_map.insert(from_index, tunnels.flow_rate);
+            if tunnels.flow_rate > 0 {
+                non_zero_indices.push(from_index);
+            }
         }
 
         Graph {
             to: hmap,
-            flow_rates: flow_map
+            flow_rates: flow_map,
+            non_zero_flow_indices: non_zero_indices,
         }
     }
 }

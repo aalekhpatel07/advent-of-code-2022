@@ -12,53 +12,49 @@ use std::{collections::{HashMap, HashSet}, hash::Hash};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph {
-    pub(crate) to: HashMap<String, Vec<String>>,
-    pub flow_rates: HashMap<String, usize>
+    pub(crate) to: HashMap<u8, Vec<u8>>,
+    pub flow_rates: HashMap<u8, isize>,
+    pub non_zero_flow_indices: Vec<u8>
 }
 
+
+pub type APSP = HashMap<u8, HashMap<u8, isize>>;
+
 impl Graph {
-    pub fn nodes(&self) -> impl Iterator<Item=String> + '_ {
+    pub fn nodes(&self) -> impl Iterator<Item=u8> + '_ {
         self.to.keys().cloned().into_iter()
     }
-    pub fn edges(&self) -> impl Iterator<Item=(String, String, usize)> + '_ {
+    pub fn edges(&self) -> impl Iterator<Item=(&u8, &u8, isize)> + '_ {
         self.to.iter().flat_map(move |(from, to)| {
-            to.iter().map(move |to| (from.clone(), to.clone(), self.flow_rates.get(from).unwrap().clone()))
+            to.iter().map(move |to| (from, to, self.flow_rates.get(from).unwrap().clone()))
         })
     }
-    pub fn neighbors(&self, node: &str) -> impl Iterator<Item=String> + '_ {
-        self.to.get(node).into_iter().flat_map(|v| v.iter().cloned())
-    }
-    pub fn len(&self) -> usize {
-        self.to.len()
-    }
-    pub fn flow_of(&self, node: &str) -> Option<isize> {
-        self.flow_rates.get(node).and_then(|x| Some(*x as isize))
+    pub fn flow_of(&self, node: &u8) -> Option<isize> {
+        self.flow_rates.get(node).cloned()
     }
 
     #[inline(always)]
-    pub fn sorted_nodes(&self) -> Vec<String> {
+    pub fn sorted_nodes(&self) -> Vec<u8> {
         let mut nodes = self.nodes().collect::<Vec<_>>();
         nodes.sort();
         nodes
     }
 
-    pub fn convert_hashset_to_u64_bitset(&self, hset: &HashSet<String>) -> u64 {
+    pub fn convert_hashset_to_u64_bitset(&self, hset: &HashSet<u8>) -> u64 {
         let mut bitset = 0;
         for node in hset {
-            let index = self.sorted_nodes().binary_search(node).unwrap();
-            bitset |= 1 << index;
+            bitset |= 1 << self.sorted_nodes().binary_search(node).unwrap();
         }
         bitset
     }
 
-
     pub fn best_flow_under(
         &self, 
-        apsp: &HashMap<String, HashMap<String, usize>>,
+        apsp: &APSP,
         remaining_time: isize,
-        current_node: String,
-        mut unseen_nodes: HashSet<String>,
-        cache: &mut HashMap<(isize, String, u64), isize>
+        current_node: u8,
+        mut unseen_nodes: HashSet<u8>,
+        cache: &mut HashMap<(isize, u8, u64), isize>
     ) {
 
         let current_node_distances = apsp.get(&current_node).unwrap();
@@ -82,11 +78,10 @@ impl Graph {
         let mut unseen_nodes_cp = unseen_nodes.clone();
         unseen_nodes_cp.remove(&current_node);
 
-
         let candidate_nodes = unseen_nodes
         .iter()
         .filter(|&node| {
-            let distance = current_node_distances.get(node).unwrap();
+            let distance = *current_node_distances.get(node).unwrap();
             (distance + 1) as isize <= remaining_time
         })
         .collect::<Vec<_>>();
@@ -132,36 +127,37 @@ impl Graph {
 
     }
 
+
     /// Straightforward Floyd-Warshall implementation for all pairs shortest_path algorithm.
-    pub fn all_pairs_shortest_paths(&self) -> HashMap<String, HashMap<String, usize>> {
+    pub fn all_pairs_shortest_paths(&self) -> APSP {
 
         let mut distances = HashMap::new();
 
         for node1 in self.to.keys() {
             for node2 in self.to.keys() {
-                distances.insert((node1.clone(), node2.clone()), usize::MAX);
+                distances.insert((node1, node2), isize::MAX);
             }
         }
 
         for (from, to, _) in self.edges() {
-            distances.insert((from.clone(), to.clone()), 1usize);
+            distances.insert((&from, &to), 1isize);
         }
 
         for node in self.to.keys() {
-            distances.insert((node.clone(), node.clone()), 0usize);
+            distances.insert((node, node), 0isize);
         }
 
         for k in self.to.keys() {
             for i in self.to.keys() {
                 for j in self.to.keys() {
-                    let dist_ik = distances.get(&(i.clone(), k.clone())).unwrap();
-                    let dist_kj = distances.get(&(k.clone(), j.clone())).unwrap();
-                    if dist_ik == &usize::MAX || dist_kj == &usize::MAX {
+                    let dist_ik = distances.get(&(i, k)).unwrap();
+                    let dist_kj = distances.get(&(k, j)).unwrap();
+                    if dist_ik == &isize::MAX || dist_kj == &isize::MAX {
                         continue;
                     }
                     let dist = dist_ik + dist_kj;
-                    if dist < *distances.get(&(i.clone(), j.clone())).unwrap() {
-                        distances.insert((i.clone(), j.clone()), dist);
+                    if dist < *distances.get(&(i, j)).unwrap() {
+                        distances.insert((i, j), dist);
                     }
                 }
             }
@@ -170,9 +166,8 @@ impl Graph {
         // let mut as_list = distances.into_iter().collect::<Vec<_>>();
         let mut results = HashMap::new();
         for ((start, end), distance) in distances.into_iter() {
-            results.entry(start).or_insert_with(HashMap::new).insert(end, distance);
+            results.entry(*start).or_insert_with(HashMap::new).insert(*end, distance);
         }
-
 
         results
     }
@@ -180,12 +175,10 @@ impl Graph {
 
     pub fn visualize_all_pair_shortest_paths(&self) {
         let shortest_paths = self.all_pairs_shortest_paths();
-        // let mut as_list = shortest_paths.into_iter().collect::<Vec<_>>();
-        // as_list.sort();
 
         let mut nodes = self.to.keys().map(|x| x.clone()).collect::<Vec<_>>();
         nodes.sort();
-        println!("    \t{}", nodes.join("\t"));
+        println!("    \t{}", nodes.iter().map(|n| format!("{}", n)).collect::<Vec<String>>().join("\t"));
 
         for node1 in nodes.iter() {
             print!("{} ", node1);
@@ -198,12 +191,6 @@ impl Graph {
             }
             println!();
         }
-        // for (idx, item) in as_list.iter().enumerate() {
-        //     if idx % self.len() == 0 {
-        //         print!("\n{}: ", item.0.0);
-        //     }
-        //     print!("{:?} ", item.1);
-        // }
     }
 }
 
