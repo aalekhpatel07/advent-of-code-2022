@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use nom::{IResult, sequence::tuple, character::{complete::digit1, complete::space0}, combinator::{map_res, map, opt}, bytes::complete::tag, multi::{many0, many1}, branch::alt};
 
 use crate::{Position, ClosestBeaconMap, Beacon, Sensor};
@@ -60,7 +62,16 @@ impl Parse for ClosestBeaconMap {
                 )
             ),
             |v: Vec<(Sensor, Beacon)>| {
-                ClosestBeaconMap(v.into_iter().collect())
+                let hmap: HashMap<Sensor, Beacon> = v.into_iter().collect();
+                let mut hset: HashSet<Position> = HashSet::new();
+                hmap.iter().for_each(|(s, b)| {
+                    hset.insert(*s);
+                    hset.insert(*b);
+                });
+                ClosestBeaconMap {
+                    sensor_to_beacon_map: hmap,
+                    occupied_positions: hset
+                }
             }
         )(input)
     }
@@ -78,10 +89,18 @@ mod tests {
         let input = "Sensor at x=2, y=18: closest beacon is at x=-2, y=15
 Sensor at x=9, y=16: closest beacon is at x=10, y=16";
 
-        let expected = ClosestBeaconMap(vec![
+        let expected = ClosestBeaconMap {
+            sensor_to_beacon_map: vec![
             (Position { x: 2, y: 18 }, Position { x: -2, y: 15 }),
             (Position { x: 9, y: 16 }, Position { x: 10, y: 16 }),
-        ].into_iter().collect());
+            ].into_iter().collect(),
+            occupied_positions: vec![
+                Position { x: 2, y: 18 },
+                Position { x: -2, y: 15 },
+                Position { x: 9, y: 16 },
+                Position { x: 10, y: 16 },
+            ].into_iter().collect()
+        };
 
         let (rem, observed) = ClosestBeaconMap::parse(input).unwrap();
         assert_eq!(expected, observed);

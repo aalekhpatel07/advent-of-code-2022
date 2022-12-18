@@ -164,7 +164,9 @@ dependencies = [
 name = "day-15"
 version = "0.1.0"
 dependencies = [
+ "indicatif",
  "nom",
+ "rayon",
  "test-case",
 ]
 
