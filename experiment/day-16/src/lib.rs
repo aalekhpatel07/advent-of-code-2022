@@ -5,17 +5,17 @@ mod parse;
 pub use parse::*;
 use rayon::prelude::*;
 
-
-use std::{collections::{HashMap, HashSet}, hash::Hash};
-
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph {
     pub(crate) to: HashMap<u8, Vec<u8>>,
     pub flow_rates: HashMap<u8, isize>,
-    pub non_zero_flow_indices: Vec<u8>
+    pub non_zero_flow_indices: Vec<u8>,
 }
-
 
 pub type APSP = HashMap<u8, HashMap<u8, isize>>;
 
@@ -23,17 +23,17 @@ pub type APSP = HashMap<u8, HashMap<u8, isize>>;
 // where the only bits set are the indices of those nodes.
 pub type State = i64;
 
-
 impl Graph {
-    pub fn nodes(&self) -> impl Iterator<Item=u8> + '_ {
+    pub fn nodes(&self) -> impl Iterator<Item = u8> + '_ {
         self.to.keys().cloned()
     }
     pub fn mask(&self, node: &u8) -> i64 {
         1 << *node
     }
-    pub fn edges(&self) -> impl Iterator<Item=(&u8, &u8, isize)> + '_ {
+    pub fn edges(&self) -> impl Iterator<Item = (&u8, &u8, isize)> + '_ {
         self.to.iter().flat_map(move |(from, to)| {
-            to.iter().map(move |to| (from, to, *self.flow_rates.get(from).unwrap()))
+            to.iter()
+                .map(move |to| (from, to, *self.flow_rates.get(from).unwrap()))
         })
     }
     pub fn flow_of(&self, node: &u8) -> Option<isize> {
@@ -42,7 +42,6 @@ impl Graph {
 
     /// Straightforward Floyd-Warshall implementation for all pairs shortest path algorithm.
     pub fn all_pairs_shortest_paths(&self) -> APSP {
-
         let mut distances = HashMap::new();
 
         for node1 in self.to.keys() {
@@ -74,30 +73,42 @@ impl Graph {
                 }
             }
         }
-        
+
         let mut results = HashMap::new();
         for ((start, end), distance) in distances.into_iter() {
-            results.entry(*start).or_insert_with(HashMap::new).insert(*end, distance);
+            results
+                .entry(*start)
+                .or_insert_with(HashMap::new)
+                .insert(*end, distance);
         }
 
         results
     }
-
 
     pub fn visualize_all_pair_shortest_paths(&self) {
         let shortest_paths = self.all_pairs_shortest_paths();
 
         let mut nodes = self.to.keys().copied().collect::<Vec<_>>();
         nodes.sort();
-        println!("    \t{}", nodes.iter().map(|n| format!("{}", n)).collect::<Vec<String>>().join("\t"));
+        println!(
+            "    \t{}",
+            nodes
+                .iter()
+                .map(|n| format!("{}", n))
+                .collect::<Vec<String>>()
+                .join("\t")
+        );
 
         for node1 in nodes.iter() {
             print!("{} ", node1);
-            let mut distances = shortest_paths.get(&(node1.clone())).unwrap().iter().collect::<Vec<_>>();
+            let mut distances = shortest_paths
+                .get(&(node1.clone()))
+                .unwrap()
+                .iter()
+                .collect::<Vec<_>>();
             distances.sort_by_key(|&d| d.0);
 
             for (_, dist) in distances.iter() {
-
                 print!("\t{}", dist);
             }
             println!();
@@ -108,32 +119,31 @@ impl Graph {
     /// the key insight is to store the visited state
     /// as a bitset (and since there are less than 63 nodes)
     /// we can use a i64 to store it.
-    /// 
+    ///
     /// [JuniorBirdman1115's Reddit post]: https://www.reddit.com/r/adventofcode/comments/zn6k1l/comment/j0oo5a9/
     pub fn visit<'a>(
-        &self, 
-        current_node: u8, 
+        &self,
+        current_node: u8,
         budget: i64,
         state: State,
         distances: &APSP,
         flow: i64,
-        answer: &'a mut HashMap<State, i64>
+        answer: &'a mut HashMap<State, i64>,
     ) {
-
         // Update our cache if a better flow is achieved.
         answer
-        .entry(state)
-        .and_modify(|e| *e = flow.max(*e))
-        .or_insert_with(|| flow.max(0));
+            .entry(state)
+            .and_modify(|e| *e = flow.max(*e))
+            .or_insert_with(|| flow.max(0));
 
         // For each node that has a non-zero flow,
         // see if we can visit that.
-        self
-        .non_zero_flow_indices
-        .iter()
-        .for_each(|next_node| {
-
-            let distance = *distances.get(&current_node).unwrap().get(next_node).unwrap() as i64;
+        self.non_zero_flow_indices.iter().for_each(|next_node| {
+            let distance = *distances
+                .get(&current_node)
+                .unwrap()
+                .get(next_node)
+                .unwrap() as i64;
 
             // If we choose to go here, then we have to travel the shortest distance to get there
             // and then turn the valve on, using up `(distance + 1)` time.
@@ -146,12 +156,18 @@ impl Graph {
             // along it.
             if unvisited && new_budget >= 0 {
                 let flow_from_neighbor = self.flow_of(next_node).unwrap() as i64;
-                self.visit(*next_node, new_budget, state | mask, distances, flow + (new_budget * flow_from_neighbor), answer);
+                self.visit(
+                    *next_node,
+                    new_budget,
+                    state | mask,
+                    distances,
+                    flow + (new_budget * flow_from_neighbor),
+                    answer,
+                );
             }
         });
     }
 }
-
 
 #[cfg(test)]
 mod tests {

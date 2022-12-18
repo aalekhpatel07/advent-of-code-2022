@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-use day_16::APSP;
 use day_16::Graph;
+use day_16::APSP;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
-
+use std::collections::HashMap;
 
 fn main() {
     let graph = &get_input_graph(include_str!("input.txt"));
@@ -17,13 +16,11 @@ pub fn get_input_graph(s: &str) -> Graph {
     graph
 }
 
-
 pub fn solve_part1(graph: &Graph, distances: &APSP) -> i64 {
     let mut answer = HashMap::new();
     graph.visit(0, 30, 0, distances, 0, &mut answer);
     *answer.values().max().unwrap()
 }
-
 
 pub fn solve_part2(graph: &Graph, distances: &APSP) -> i64 {
     let state: i64 = 0;
@@ -33,30 +30,26 @@ pub fn solve_part2(graph: &Graph, distances: &APSP) -> i64 {
     let answer_cp = answer.clone();
 
     // Assume that the elephant and us take a disjoint path for
-    // opening the valves. Moreover, we actually end up opening all the 
+    // opening the valves. Moreover, we actually end up opening all the
     // non-zero flow valves. So we can get the max of the sum of the flows
     // where the two paths are disjoint subsets of the non-zero flow valves.
     answer
-    .iter()
-    .flat_map(|(&n1, &n2)| {
-        answer_cp.iter().map(move |(&m1, &m2)| ((n1, n2), (m1, m2)))
-    }).collect::<Vec<_>>()
-    .par_iter()
-    // filter disjoint states.
-    .filter(|((k1, _), (k2, _))| {
-        (*k1 & *k2) == 0
-    })
-    // get sums of the flows along those paths.
-    .map(|((_, v1), (_, v2))| *v1 + *v2)
-    .max()
-    .unwrap()
+        .iter()
+        .flat_map(|(&n1, &n2)| answer_cp.iter().map(move |(&m1, &m2)| ((n1, n2), (m1, m2))))
+        .collect::<Vec<_>>()
+        .par_iter()
+        // filter disjoint states.
+        .filter(|((k1, _), (k2, _))| (*k1 & *k2) == 0)
+        // get sums of the flows along those paths.
+        .map(|((_, v1), (_, v2))| *v1 + *v2)
+        .max()
+        .unwrap()
 }
-
 
 #[cfg(test)]
 mod tests {
-    use day_16::Graph;
     use super::*;
+    use day_16::Graph;
 
     fn get_smol_input() -> Graph {
         let s = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
@@ -78,7 +71,6 @@ Valve JJ has flow rate=21; tunnel leads to valve II";
         let distances = graph.all_pairs_shortest_paths();
         assert_eq!(1651, solve_part1(&graph, &distances));
         assert_eq!(1707, solve_part2(&graph, &distances));
-
     }
 
     #[test]
