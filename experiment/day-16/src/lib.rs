@@ -26,14 +26,14 @@ pub type State = i64;
 
 impl Graph {
     pub fn nodes(&self) -> impl Iterator<Item=u8> + '_ {
-        self.to.keys().cloned().into_iter()
+        self.to.keys().cloned()
     }
     pub fn mask(&self, node: &u8) -> i64 {
         1 << *node
     }
     pub fn edges(&self) -> impl Iterator<Item=(&u8, &u8, isize)> + '_ {
         self.to.iter().flat_map(move |(from, to)| {
-            to.iter().map(move |to| (from, to, self.flow_rates.get(from).unwrap().clone()))
+            to.iter().map(move |to| (from, to, *self.flow_rates.get(from).unwrap()))
         })
     }
     pub fn flow_of(&self, node: &u8) -> Option<isize> {
@@ -52,7 +52,7 @@ impl Graph {
         }
 
         for (from, to, _) in self.edges() {
-            distances.insert((&from, &to), 1isize);
+            distances.insert((from, to), 1isize);
         }
 
         for node in self.to.keys() {
@@ -87,13 +87,13 @@ impl Graph {
     pub fn visualize_all_pair_shortest_paths(&self) {
         let shortest_paths = self.all_pairs_shortest_paths();
 
-        let mut nodes = self.to.keys().map(|x| x.clone()).collect::<Vec<_>>();
+        let mut nodes = self.to.keys().copied().collect::<Vec<_>>();
         nodes.sort();
         println!("    \t{}", nodes.iter().map(|n| format!("{}", n)).collect::<Vec<String>>().join("\t"));
 
         for node1 in nodes.iter() {
             print!("{} ", node1);
-            let mut distances = shortest_paths.get(&(node1.clone())).unwrap().into_iter().collect::<Vec<_>>();
+            let mut distances = shortest_paths.get(&(node1.clone())).unwrap().iter().collect::<Vec<_>>();
             distances.sort_by_key(|&d| d.0);
 
             for (_, dist) in distances.iter() {
@@ -124,7 +124,7 @@ impl Graph {
         answer
         .entry(state)
         .and_modify(|e| *e = flow.max(*e))
-        .or_insert(flow.max(0));
+        .or_insert_with(|| flow.max(0));
 
         // For each node that has a non-zero flow,
         // see if we can visit that.
@@ -133,19 +133,19 @@ impl Graph {
         .iter()
         .for_each(|next_node| {
 
-            let distance = *distances.get(&current_node).unwrap().get(&next_node).unwrap() as i64;
+            let distance = *distances.get(&current_node).unwrap().get(next_node).unwrap() as i64;
 
             // If we choose to go here, then we have to travel the shortest distance to get there
             // and then turn the valve on, using up `(distance + 1)` time.
             let new_budget = budget - (distance + 1);
 
-            let mask = self.mask(&next_node);
+            let mask = self.mask(next_node);
             let unvisited = (state & mask) == 0;
 
             // If not already visited and have budget to move, take that path and record the best flow
             // along it.
             if unvisited && new_budget >= 0 {
-                let flow_from_neighbor = self.flow_of(&next_node).unwrap() as i64;
+                let flow_from_neighbor = self.flow_of(next_node).unwrap() as i64;
                 self.visit(*next_node, new_budget, state | mask, distances, flow + (new_budget * flow_from_neighbor), answer);
             }
         });

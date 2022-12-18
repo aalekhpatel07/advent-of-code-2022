@@ -8,8 +8,8 @@ use rayon::prelude::ParallelIterator;
 fn main() {
     let graph = &get_input_graph(include_str!("input.txt"));
     let distances = graph.all_pairs_shortest_paths();
-    println!("Part 1: {}", solve_part1(&graph, &distances));
-    println!("Part 2: {}", solve_part2(&graph, &distances));
+    println!("Part 1: {}", solve_part1(graph, &distances));
+    println!("Part 2: {}", solve_part2(graph, &distances));
 }
 
 pub fn get_input_graph(s: &str) -> Graph {
@@ -20,7 +20,7 @@ pub fn get_input_graph(s: &str) -> Graph {
 
 pub fn solve_part1(graph: &Graph, distances: &APSP) -> i64 {
     let mut answer = HashMap::new();
-    graph.visit(0, 30, 0, &distances, 0, &mut answer);
+    graph.visit(0, 30, 0, distances, 0, &mut answer);
     *answer.values().max().unwrap()
 }
 
@@ -28,7 +28,7 @@ pub fn solve_part1(graph: &Graph, distances: &APSP) -> i64 {
 pub fn solve_part2(graph: &Graph, distances: &APSP) -> i64 {
     let state: i64 = 0;
     let mut answer = HashMap::new();
-    graph.visit(0, 26, state, &distances, 0, &mut answer);
+    graph.visit(0, 26, state, distances, 0, &mut answer);
 
     let answer_cp = answer.clone();
 

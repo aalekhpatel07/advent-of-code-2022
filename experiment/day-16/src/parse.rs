@@ -30,7 +30,7 @@ where
             let neighbors = tunnels
             .to
             .iter()
-            .map(|t| starting_nodes.binary_search(&t).unwrap() as u8)
+            .map(|t| starting_nodes.binary_search(t).unwrap() as u8)
             .collect::<Vec<_>>();
 
             hmap.insert(from_index, neighbors);
