@@ -2,7 +2,6 @@
 
 mod parse;
 
-use indicatif::ProgressBar;
 pub use parse::*;
 use rayon::prelude::*;
 
@@ -20,9 +19,17 @@ pub struct Graph {
 
 pub type APSP = HashMap<u8, HashMap<u8, isize>>;
 
+// There's less than 63 nodes, so we can use a i64 to represent a set of indices
+// where the only bits set are the indices of those nodes.
+pub type State = i64;
+
+
 impl Graph {
     pub fn nodes(&self) -> impl Iterator<Item=u8> + '_ {
         self.to.keys().cloned().into_iter()
+    }
+    pub fn mask(&self, node: &u8) -> i64 {
+        1 << *node
     }
     pub fn edges(&self) -> impl Iterator<Item=(&u8, &u8, isize)> + '_ {
         self.to.iter().flat_map(move |(from, to)| {
@@ -33,102 +40,7 @@ impl Graph {
         self.flow_rates.get(node).cloned()
     }
 
-    #[inline(always)]
-    pub fn sorted_nodes(&self) -> Vec<u8> {
-        let mut nodes = self.nodes().collect::<Vec<_>>();
-        nodes.sort();
-        nodes
-    }
-
-    pub fn convert_hashset_to_u64_bitset(&self, hset: &HashSet<u8>) -> u64 {
-        let mut bitset = 0;
-        for node in hset {
-            bitset |= 1 << self.sorted_nodes().binary_search(node).unwrap();
-        }
-        bitset
-    }
-
-    pub fn best_flow_under(
-        &self, 
-        apsp: &APSP,
-        remaining_time: isize,
-        current_node: u8,
-        mut unseen_nodes: HashSet<u8>,
-        cache: &mut HashMap<(isize, u8, u64), isize>
-    ) {
-
-        let current_node_distances = apsp.get(&current_node).unwrap();
-        if cache.contains_key(&(remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes))) {
-            // println!("Found in cache!");
-            return;
-        }
-
-        // If no time remaining, we cannot add any more flow.
-        if remaining_time <= 0 {
-            cache
-            .entry((remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes)))
-            .and_modify(|e| *e = 0.max(*e))
-            .or_insert(0);
-            return;
-        }
-
-        // We try to visit every node possible within our remaining time
-        // and we return the maximum flow we can get if we turn that valve on.
-
-        let mut unseen_nodes_cp = unseen_nodes.clone();
-        unseen_nodes_cp.remove(&current_node);
-
-        let candidate_nodes = unseen_nodes
-        .iter()
-        .filter(|&node| {
-            let distance = *current_node_distances.get(node).unwrap();
-            (distance + 1) as isize <= remaining_time
-        })
-        .collect::<Vec<_>>();
-
-        if candidate_nodes.len() == 0 {
-            // No nodes to visit, we cannot add any more flow.
-            cache
-            .entry((remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes)))
-            .and_modify(|e| *e = 0.max(*e))
-            .or_insert(0);
-            return;
-        }
-
-        let best_value = 
-        candidate_nodes
-        .iter()
-        .map(|&candidate_node| {
-            let distance = current_node_distances.get(candidate_node).unwrap();
-            let mut unseen_nodes_cp = unseen_nodes_cp.clone();
-            unseen_nodes_cp.remove(candidate_node);
-
-            self.best_flow_under(
-                apsp, 
-                remaining_time - (distance + 1) as isize, 
-                candidate_node.to_owned(), 
-                unseen_nodes_cp.clone(),
-                cache,
-            );
-
-            let cache_key = (remaining_time - (distance + 1) as isize, candidate_node.to_owned(), self.convert_hashset_to_u64_bitset(&unseen_nodes_cp));
-            let flow = cache.get(&cache_key).unwrap();
-            let value = *flow + self.flow_of(&current_node).unwrap() * (remaining_time as isize);
-
-            value
-        })
-        .max()
-        .unwrap_or(0);
-
-        cache
-        .entry((remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes)))
-        .and_modify(|e| *e = best_value.max(*e))
-        .or_insert(best_value);
-
-    }
-
-
-    /// Straightforward Floyd-Warshall implementation for all pairs shortest_path algorithm.
+    /// Straightforward Floyd-Warshall implementation for all pairs shortest path algorithm.
     pub fn all_pairs_shortest_paths(&self) -> APSP {
 
         let mut distances = HashMap::new();
@@ -163,7 +75,6 @@ impl Graph {
             }
         }
         
-        // let mut as_list = distances.into_iter().collect::<Vec<_>>();
         let mut results = HashMap::new();
         for ((start, end), distance) in distances.into_iter() {
             results.entry(*start).or_insert_with(HashMap::new).insert(*end, distance);
@@ -192,17 +103,52 @@ impl Graph {
             println!();
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Node {
-    pub(crate) name: String,
-    pub(crate) flow_rate: usize
-}
+    /// Thanks to [JuniorBirdman1115's Reddit post],
+    /// the key insight is to store the visited state
+    /// as a bitset (and since there are less than 63 nodes)
+    /// we can use a i64 to store it.
+    /// 
+    /// [JuniorBirdman1115's Reddit post]: https://www.reddit.com/r/adventofcode/comments/zn6k1l/comment/j0oo5a9/
+    pub fn visit<'a>(
+        &self, 
+        current_node: u8, 
+        budget: i64,
+        state: State,
+        distances: &APSP,
+        flow: i64,
+        answer: &'a mut HashMap<State, i64>
+    ) {
 
-impl Hash for Node {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.name.hash(state);
+        // Update our cache if a better flow is achieved.
+        answer
+        .entry(state)
+        .and_modify(|e| *e = flow.max(*e))
+        .or_insert(flow.max(0));
+
+        // For each node that has a non-zero flow,
+        // see if we can visit that.
+        self
+        .non_zero_flow_indices
+        .iter()
+        .for_each(|next_node| {
+
+            let distance = *distances.get(&current_node).unwrap().get(&next_node).unwrap() as i64;
+
+            // If we choose to go here, then we have to travel the shortest distance to get there
+            // and then turn the valve on, using up `(distance + 1)` time.
+            let new_budget = budget - (distance + 1);
+
+            let mask = self.mask(&next_node);
+            let unvisited = (state & mask) == 0;
+
+            // If not already visited and have budget to move, take that path and record the best flow
+            // along it.
+            if unvisited && new_budget >= 0 {
+                let flow_from_neighbor = self.flow_of(&next_node).unwrap() as i64;
+                self.visit(*next_node, new_budget, state | mask, distances, flow + (new_budget * flow_from_neighbor), answer);
+            }
+        });
     }
 }
 
@@ -228,6 +174,5 @@ Valve JJ has flow rate=21; tunnel leads to valve II";
         let (rem, graph) = parse_graph(s).unwrap();
         assert_eq!(rem, "");
         assert_eq!(graph.to.len(), 10);
-        println!("{:#?}", graph);
     }
 }
