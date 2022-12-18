@@ -35,6 +35,22 @@ impl Graph {
         self.flow_rates.get(node).and_then(|x| Some(*x as isize))
     }
 
+    #[inline(always)]
+    pub fn sorted_nodes(&self) -> Vec<String> {
+        let mut nodes = self.nodes().collect::<Vec<_>>();
+        nodes.sort();
+        nodes
+    }
+
+    pub fn convert_hashset_to_u64_bitset(&self, hset: &HashSet<String>) -> u64 {
+        let mut bitset = 0;
+        for node in hset {
+            let index = self.sorted_nodes().binary_search(node).unwrap();
+            bitset |= 1 << index;
+        }
+        bitset
+    }
+
 
     pub fn best_flow_under(
         &self, 
@@ -42,25 +58,22 @@ impl Graph {
         remaining_time: isize,
         current_node: String,
         mut unseen_nodes: HashSet<String>,
-        mut cache: HashMap<(isize, String, String), isize>,
-        progress_bar: ProgressBar
-    ) -> (HashMap<(isize, String, String), isize>, isize) {
+        cache: &mut HashMap<(isize, String, u64), isize>
+    ) {
 
         let current_node_distances = apsp.get(&current_node).unwrap();
-
-
-        let mut unseen_nodes_list = unseen_nodes.clone().into_iter().collect::<Vec<String>>();
-        unseen_nodes_list.sort();
-        if cache.contains_key(&(remaining_time, current_node.clone(), unseen_nodes_list.join(","))) {
-            return (cache.clone(), *cache.get(&(remaining_time, current_node.clone(), unseen_nodes_list.join(","))).unwrap());
+        if cache.contains_key(&(remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes))) {
+            // println!("Found in cache!");
+            return;
         }
 
         // If no time remaining, we cannot add any more flow.
         if remaining_time <= 0 {
-            let mut unseen_nodes_list = unseen_nodes.clone().into_iter().collect::<Vec<String>>();
-            unseen_nodes_list.sort();
-            cache.insert((remaining_time, current_node.clone(), unseen_nodes_list.join(",")), 0);
-            return (cache, 0);
+            cache
+            .entry((remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes)))
+            .and_modify(|e| *e = 0.max(*e))
+            .or_insert(0);
+            return;
         }
 
         // We try to visit every node possible within our remaining time
@@ -80,37 +93,42 @@ impl Graph {
 
         if candidate_nodes.len() == 0 {
             // No nodes to visit, we cannot add any more flow.
-            return (cache, 0);
+            cache
+            .entry((remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes)))
+            .and_modify(|e| *e = 0.max(*e))
+            .or_insert(0);
+            return;
         }
-        let mut cache_cp = cache.clone();
 
+        let best_value = 
         candidate_nodes
-        .par_iter()
+        .iter()
         .map(|&candidate_node| {
             let distance = current_node_distances.get(candidate_node).unwrap();
-            let flow = self.flow_of(&candidate_node).unwrap();
             let mut unseen_nodes_cp = unseen_nodes_cp.clone();
             unseen_nodes_cp.remove(candidate_node);
-            let (cache_computed, flow) = self.best_flow_under(
+
+            self.best_flow_under(
                 apsp, 
                 remaining_time - (distance + 1) as isize, 
                 candidate_node.to_owned(), 
-                unseen_nodes_cp,
-                cache_cp.clone(),
-                progress_bar.clone()
+                unseen_nodes_cp.clone(),
+                cache,
             );
-            progress_bar.inc(1);
 
-            let value = flow + self.flow_of(&current_node).unwrap() * (remaining_time as isize);
+            let cache_key = (remaining_time - (distance + 1) as isize, candidate_node.to_owned(), self.convert_hashset_to_u64_bitset(&unseen_nodes_cp));
+            let flow = cache.get(&cache_key).unwrap();
+            let value = *flow + self.flow_of(&current_node).unwrap() * (remaining_time as isize);
 
-            let mut unseen_nodes_list = unseen_nodes.clone().into_iter().collect::<Vec<String>>();
-            unseen_nodes_list.sort();
-            let mut cache_cp = cache_cp.clone();
-            cache_cp.insert((remaining_time, current_node.clone(), unseen_nodes_list.join(",")), value);
-            (cache_cp, value)
+            value
         })
-        .max_by_key(|(c, v)| *v)
-        .unwrap_or((cache, 0))
+        .max()
+        .unwrap_or(0);
+
+        cache
+        .entry((remaining_time, current_node.clone(), self.convert_hashset_to_u64_bitset(&unseen_nodes)))
+        .and_modify(|e| *e = best_value.max(*e))
+        .or_insert(best_value);
 
     }
 

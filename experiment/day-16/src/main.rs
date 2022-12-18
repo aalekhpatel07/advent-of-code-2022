@@ -19,63 +19,22 @@ pub fn get_input_graph(s: &str) -> Graph {
 pub fn solve_part1(graph: &Graph) -> isize {
     // graph.visualize_all_pair_shortest_paths();
     let distances = graph.all_pairs_shortest_paths();
-    let mut unseen_nodes = graph.nodes().collect::<HashSet<_>>();
-    unseen_nodes.remove("AA");
+    let unseen_nodes = graph.nodes().collect::<HashSet<_>>();
+    // unseen_nodes.remove("AA");
     let mut cache = HashMap::new();
-    let progress_bar = ProgressBar::new(1_000_000_000);
-    let flow = graph.best_flow_under(
+    // let progress_bar = ProgressBar::new(1_000_000_000);
+    // let cache_counter = ProgressBar::new(1_000_000_000);
+    let cache_key_hset = graph.convert_hashset_to_u64_bitset(&unseen_nodes);
+
+    graph.best_flow_under(
         &distances, 
         30, 
         "AA".to_owned(), 
         unseen_nodes,
-        cache,
-        progress_bar
+        &mut cache,
     );
-    println!("flow: {:#?}", flow);
-    // let starting_node = "AA".to_owned();
-
-    // let mut remaining_time: usize = 30;
-    // let mut unseen = HashSet::new();
-    // unseen.extend(graph.nodes());
-
-    // // let mut visited = HashSet::new();
-    // // visited.insert(starting_node.clone());
-    // unseen.remove(starting_node.as_str());
-
-    // // This is a max-heap.
-    // // let mut queue = BinaryHeap::new();
-    // // queue.push((0, starting_node.clone()));
-
-    // let mut queue = vec![];
-    // queue.push(starting_node.clone());
     
-    // let mut result = 0;
-
-    // while let Some(current) = queue.pop() {
-    //     unseen.remove(&current);
-    //     let distances = distances.get(&current.clone()).unwrap();
-
-    //     // for 
-    //     let mut potential_nodes = vec![];
-    //     for candidate_node in unseen.iter() {
-    //         let distance = *distances.get(candidate_node).unwrap();
-    //         if (distance + 1) <= remaining_time {
-    //             potential_nodes.push((graph.flow_of(candidate_node).unwrap() * (remaining_time - distance - 1), candidate_node, distance + 1));
-    //         }
-    //     }
-    //     if let Some(best_neighbor) = potential_nodes.iter().max() {
-    //         queue.push(best_neighbor.1.to_string());
-    //         remaining_time -= best_neighbor.2;
-    //         result += best_neighbor.0;
-    //     } else {
-    //         break;
-    //     }
-    // }
-
-    // result
-
-    // println!("Part 1: {:#?}", as_list);
-    // println!("{:#?}", graph.edges().collect::<Vec<_>>());
+    println!("cache: {:#?}", cache.get(&(30, "AA".to_owned(), cache_key_hset)).unwrap());
     0
 }
 
