@@ -6,10 +6,11 @@ const INPUT: &str = include_str!("input.txt");
 fn main() {
     let directions = get_directions(INPUT);
     println!("Part 1: {}", solve_part1(directions.clone(), 2022));
-    println!("Part 2: {}", solve_part1(directions, 1000000000000));
+    // println!("Part 2: {}", solve_part1(directions, 1000000000000));
 }
 
 pub fn get_directions(s: &str) -> Directions {
+    println!("Jet length: {}", s.len());
     parse_direction(s).unwrap().1.into()
 }
 
@@ -27,6 +28,7 @@ pub fn solve_part1(
     cave.height()
 }
 
+/// Hmmmmm. I know there are cycles but how tf do I find them?
 pub fn solve_part2(directions: Directions) {
 
 }

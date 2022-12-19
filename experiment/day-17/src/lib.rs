@@ -45,7 +45,7 @@ pub struct Rock {
 }
 
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
 pub enum RockKind {
     Minus,
     Plus,
@@ -224,7 +224,8 @@ pub struct Cave {
     spawn_position: Option<(isize, isize)>,
     rocks_stabilized: usize,
     pub quiet: bool,
-    pub log_spawn: bool
+    pub log_spawn: bool,
+    // pub height_deltas: HashMap<(RockKind, Direction, isize), Vec<isize>>
 }
 
 impl Cave {
@@ -239,6 +240,7 @@ impl Cave {
             rocks_stabilized: 0,
             quiet: true,
             log_spawn: true,
+            // height_deltas: HashMap::new()
         }
     }
 
@@ -328,15 +330,23 @@ impl Cave {
                 // Add it to the existing filled.
                 self.rocks_stabilized += 1;
                 progress_bar.inc(1);
+                // let highest_placed_rock_so_far = self.existing_filled.iter().max_by_key(|x| x.0).unwrap_or(&(0, 0)).0;
+
+
                 active_rock.rock.filled.iter().for_each(|(p_row, p_col)| {
                     let position = (active_rock.bottom_left.0 + *p_row as isize, active_rock.bottom_left.1 + *p_col as isize);
                     self.existing_filled.insert(position);
                 });
                 // Tricky stuff. The jet could potentially maneuver the rock
                 // much lower than the previous max.
+                let highest_placed_rock = self.existing_filled.iter().max_by_key(|x| x.0).unwrap().0;
+
+                // let height_delta = highest_placed_rock - highest_placed_rock_so_far;
+                // self.height_deltas.entry((active_rock.kind, jet_direction, height_delta)).and_modify(|e| e.push(self.rocks_stabilized as isize)).or_insert_with(|| vec![self.rocks_stabilized as isize]);
+
                 self.spawn_position = Some(
                     (
-                        self.existing_filled.iter().max_by_key(|x| x.0).unwrap().0 + 4, 
+                        highest_placed_rock + 4, 
                         2
                     )
                 );
@@ -501,15 +511,21 @@ mod tests {
 
     #[test]
     fn test_cave_rock_stabilize() {
-        let s = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
-        let directions = parse_direction(s).unwrap().1;
+        let input = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
+        // let input = include_str!("input.txt");
+        let directions = parse_direction(input).unwrap().1;
         let directions = super::Directions::from(directions);
         let mut cave = Cave::new(directions, 7);
         cave.quiet = true;
         cave.log_spawn = false;
         cave.run(2022);
-        // let s = format!("{}", cave);
-        // println!("{}", s);
-        println!("{:#?}", cave.existing_filled.iter().max_by_key(|x| x.0).unwrap());
+
+
+        // println!("{:#?}", cave.height_deltas.len());
+
+        // for (&item, values) in cave.height_deltas.iter() {
+        //     println!("{:?}: {:?}", item, values);
+
+        // }
     }
 }
