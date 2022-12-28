@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-
-use nom::{
-    IResult
-};
+use nom::IResult;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Operator {
@@ -22,7 +19,7 @@ pub struct Operation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Literal(u64),
+    Literal(f64),
     Operation(Operation)
 }
 
@@ -61,7 +58,7 @@ impl Tree {
         self.statements.insert(statement.target.clone(), statement.value);
     }
 
-    pub fn evaluate_part1(&self, key: &str, memo: &mut HashMap<String, u64>) -> u64 {
+    pub fn evaluate_part1(&self, key: &str, memo: &mut HashMap<String, f64>) -> f64 {
 
         if let Some(value) = memo.get(key) {
             return *value;
@@ -95,10 +92,83 @@ impl Tree {
     }
 
 
-    pub fn part1(&self) -> HashMap<String, u64> {
+    pub fn part1(&self) -> i64 {
         let mut memo = HashMap::new();
         self.evaluate_part1("root", &mut memo);
-        memo
+        memo.get("root").unwrap().round() as i64
+    }
+
+    /// Modify the tree slightly so that the root always subtracts its two subtrees and
+    /// the `humn` is a given literal value.
+    pub fn build_tree_for_part2(&self, x_coordinate: f64) -> Tree {
+        let mut stmts = self.statements.clone();
+        stmts
+        .entry("root".to_string())
+        .and_modify(
+            |e| {
+                match e {
+                    Expression::Operation(op) => {
+                        op.operator = Operator::Subtract;
+                    },
+                _ => {}
+            }
+        });
+        stmts
+        .entry("humn".to_string())
+        .and_modify(
+            |e| {
+                match e {
+                    Expression::Literal(_) => {
+                    *e = Expression::Literal(x_coordinate);
+                },
+                _ => {}
+            }
+        });
+        
+        Tree {
+            statements: stmts
+        }
+    }
+
+    /// Idea:
+    /// 
+    /// We're assuming there's only one reference of `humn` in the tree so that
+    /// arithmetic evaluation ends up being a linear equation in `humn`.
+    /// A quick inspection of the dataset shows that this is the case.
+    /// 
+    /// Now we can try to find the zero of the function:
+    /// f(humn) = value(left_child given `humn`) - value(right_child given `humn`)
+    /// 
+    /// Since this is a linear function, we can model it as y = mx + b for some gradient m 
+    /// and intercept b. We can then solve for the value of `humn` that makes the function
+    /// zero by rearranging the equation to:
+    /// humn = -b / m
+    /// 
+    /// To calculate the gradient, we choose two points on the function and calculate the ratio of
+    /// the difference in y values to the difference in x values. We have to be careful to choose large
+    /// enough values for x so that the difference in y values is significant and the gradients rounds off to
+    /// a nice whole number.
+    pub fn part2(&self) -> i64 {
+
+        // Just choose a wide enough step size to get a good enough answer.
+        let x2 = 1000.0;
+        let x1 = 0.0;
+
+        let tree_at_x2 = self.build_tree_for_part2(x2);
+        let tree_at_x1 = self.build_tree_for_part2(x1);
+
+        let mut memo_x1 = HashMap::new();
+        tree_at_x1.evaluate_part1("root", &mut memo_x1);
+        let y1 = *memo_x1.get("root").unwrap();
+
+        let mut memo_x2 = HashMap::new();
+        tree_at_x2.evaluate_part1("root", &mut memo_x2);
+        let y2 = *memo_x2.get("root").unwrap();
+
+        let gradient = (y2 - y1) / (x2 - x1);
+        let intercept = y1;
+
+        (-intercept / gradient).round() as i64
     }
 
 }
@@ -108,9 +178,9 @@ pub mod parse {
     use super::*;
     use nom::branch::alt;
     use nom::bytes::complete::tag;
-    use nom::character::complete::{one_of, alpha1, space1, u64 as parse_u64};
+    use nom::character::complete::{one_of, alpha1, space1, i64 as parse_i64};
     use nom::combinator::map;
-    use nom::multi::{many1, separated_list1, separated_list0};
+    use nom::multi::separated_list0;
     use nom::sequence::tuple;
 
 
@@ -141,7 +211,7 @@ pub mod parse {
     pub fn expression(s: &str) -> IResult<&str, Expression> {
         alt((
             map(operation, |op| Expression::Operation(op)),
-            map(parse_u64, |v| Expression::Literal(v))
+            map(parse_i64, |v| Expression::Literal(v as f64))
         ))(s)
     }
 
@@ -162,7 +232,6 @@ pub mod parse {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::*;
 
         #[test]
         fn test_operator() {
@@ -203,14 +272,14 @@ pub mod parse {
                 left: "a".to_string(),
                 right: "b".to_string()
             }))));
-            assert_eq!(expression("123"), Ok(("", Expression::Literal(123))));
+            assert_eq!(expression("123"), Ok(("", Expression::Literal(123.0))));
         }
 
         #[test]
         fn test_statement() {
             assert_eq!(statement("a: 123"), Ok(("", Statement {
                 target: "a".to_string(),
-                value: Expression::Literal(123)
+                value: Expression::Literal(123.0)
             })));
             assert_eq!(statement("ccza: ac + qb"), Ok(("", Statement {
                 target: "ccza".to_string(),
@@ -225,15 +294,9 @@ pub mod parse {
     }
 }
 
-
-// pub fn parse_statement(s: &str) -> IResult<Statement, &str> {
-
-// }
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::*;
     use super::parse::statements;
 
     #[test]
@@ -255,13 +318,10 @@ drzm: hmdt - zczc
 hmdt: 32";
 
         let stmts = statements(input).unwrap().1;
-        println!("{:#?}", stmts);
         let tree: Tree = stmts.into();
-        let memo = tree.part1();
-        println!("{:#?}", memo);
 
-
-        // let tree = Tree::from_statements(stmts);
+        assert_eq!(tree.part1(), 152);
+        assert_eq!(tree.part2(), 301);
 
     }
 }
